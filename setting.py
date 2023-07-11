@@ -1,5 +1,7 @@
 from nasbench import api
-nasbench = api.NASBench('nasbench_only108.tfrecord')
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+nasbench = api.NASBench('model/nasbench_only108.tfrecord')
 
 # Useful constants
 INPUT = 'input'

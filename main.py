@@ -11,7 +11,7 @@ def run_evolution_search(victim_spec, cycle=30,
                          mutation_rate=1.0, constraint=1e8):
     """Run a single roll-out of regularized evolution to a fixed time budget."""
     nasbench.reset_budget_counters()
-    victim_val_avg, victim_test_avg = acc_avg(victim_spec)
+    victim_val_avg, victim_test_avg = acc_avg(victim_spec) # 调用nasbench.get_metrics_from_spec
     best_scores = [-1000]
     best_valids, best_tests = [victim_val_avg], [victim_test_avg]
     best_history = [victim_spec]
@@ -24,8 +24,8 @@ def run_evolution_search(victim_spec, cycle=30,
     while i < population_size:
         # ensure each individual is unique
         while True:
-            spec = mutate_spec(victim_spec, victim_spec, mutation_rate)
-            flag = check_same(spec, population)
+            spec = mutate_spec(victim_spec, mutation_rate)
+            flag = check_same(spec, population) # 实际上是check_unique
             if flag == 1:
                 break
 
@@ -57,7 +57,7 @@ def run_evolution_search(victim_spec, cycle=30,
         best_spec = sorted(sample, key=lambda i: i[0])[-1][1]
         # print(sorted(sample, key=lambda i:i[0]))
         # print(best_spec.original_matrix)
-        new_spec = mutate_spec(victim_spec, best_spec, mutation_rate)
+        new_spec = mutate_spec(best_spec, mutation_rate)
         print('The %d-th new spec generated'% i)
 
         # data = nasbench.query(new_spec)
@@ -91,10 +91,10 @@ if __name__=='__main__':
 
     # Query an Inception-like cell from the dataset.
     victim_spec = api.ModelSpec(
-        matrix=[[0, 1, 1, 0, 0],
-                [0, 0, 1, 0, 1],
-                [0, 0, 0, 1, 0],
-                [0, 0, 0, 0, 1],
+        matrix=[[0, 1, 1, 0, 0], # 输入层
+                [0, 0, 1, 0, 1], # 1x1卷积
+                [0, 0, 0, 1, 0], # 3x3卷积
+                [0, 0, 0, 0, 1], # 1x1卷积
                 [0, 0, 0, 0, 0]],  # output layer
         # Operations at the vertices of the module, matches order of matrix.
         ops=[INPUT, CONV1X1, CONV3X3, CONV1X1, OUTPUT])
@@ -102,7 +102,7 @@ if __name__=='__main__':
 
     victim_net = Network(victim_spec)
     input = torch.randn(1, 3, 32, 32)
-    victim_flops, _ = profile(victim_net, inputs=(input, ))
+    victim_flops, _ = profile(victim_net, inputs=(input, )) # 用于计算vectim_net的flops
 
 
     evolution_data = []

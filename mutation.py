@@ -3,11 +3,12 @@ import copy
 import numpy as np
 import random
 
-def mutate_spec(victim_spec, old_spec, mutation_rate=1.0):
+def mutate_spec(old_spec, mutation_rate=1.0):
     """Computes a valid mutated spec from the old_spec."""
     while True:
         new_matrix = copy.deepcopy(old_spec.original_matrix)
         new_ops = copy.deepcopy(old_spec.original_ops)
+        victim_spec = copy.deepcopy(old_spec)
         NUM_VERTICES = new_matrix.shape[0]
         idle_VERTICES = MAX_VERTICES - NUM_VERTICES
         seq_list = np.arange(NUM_VERTICES).tolist()
@@ -90,8 +91,8 @@ def mutate_spec(victim_spec, old_spec, mutation_rate=1.0):
             elif np.any(
                     new_spec.original_matrix != old_spec.original_matrix) or new_spec.original_ops != old_spec.original_ops:
                 return new_spec
-            # Avoid getting stuck in an infinite loop
             elif new_matrix.sum() == MAX_EDGES or CONV1X1 not in new_spec.original_ops:
+                print("WARNING: new_spec is the same as old_spec, resample one")
                 old_spec = victim_spec
 
 
