@@ -6,12 +6,14 @@ warnings.filterwarnings("ignore")
 
 
 def acc_avg(spec):
+  # nasbench 对每个spec都训练了3次，这里取平均
   _, computed_metrics = nasbench.get_metrics_from_spec(spec)
   val_total = 0
   test_total = 0
   for i in range(3):
-    val_total += computed_metrics[108][i]['final_validation_accuracy']
-    test_total += computed_metrics[108][i]['final_test_accuracy']
+    # 108: 108 epochs
+    val_total += computed_metrics[108][i]['final_validation_accuracy'] # 验证集准确率
+    test_total += computed_metrics[108][i]['final_test_accuracy'] # 测试集准确率
   return val_total/3, test_total/3
 
 
@@ -19,7 +21,7 @@ def fitness(spec):
   val_acc, test_acc = acc_avg(spec)
   input = torch.randn(1, 3, 32, 32)
   net = Network(spec)
-  flops, params = profile(net, inputs=(input, ))
+  flops, params = profile(net, inputs=(input, ), verbose=False)
   # print('ratio',ratio)
   # print('acc',val_acc)
   score = -val_acc

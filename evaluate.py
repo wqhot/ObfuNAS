@@ -20,7 +20,7 @@ victim = api.ModelSpec(
                 [0, 0, 0, 0, 0,0]],  # output layer
         # Operations at the vertices of the module, matches order of matrix.
         ops=[INPUT, MAXPOOL3X3, MAXPOOL3X3, MAXPOOL3X3, MAXPOOL3X3,OUTPUT])
-vict_flop, vict_test = info(victim)
+vict_flop, vict_test = info(victim) # vict_test 测试集准确率
 print('res',vict_flop, vict_test)
 
 
@@ -28,6 +28,7 @@ mask_flops = []
 mask_tests = []
 population = []
 i = 0
+# 300次变异
 while True:
 # for i in range(1):
     ori_spec = victim

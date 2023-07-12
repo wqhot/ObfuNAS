@@ -1,4 +1,5 @@
 import pickle
+import time
 from utils import *
 from network import *
 from setting import *
@@ -24,40 +25,51 @@ def run_evolution_search(victim_spec, cycle=30,
     while i < population_size:
         # ensure each individual is unique
         while True:
-            spec = mutate_spec(victim_spec, mutation_rate)
+            spec = mutate_spec(victim_spec, victim_spec, mutation_rate)
             flag = check_same(spec, population) # 实际上是check_unique
             if flag == 1:
                 break
 
+        print('Generate %d-th new spec' % i)
+        # score 是验证集准确率的负数 其值越大 作者认为越好（*）
         score, flops, val_acc, test_acc = fitness(spec)
         if flops < constraint:
             population.append((score, spec))
             i += 1
 
+            # 保证best_scores最后一个是最大的
             if score > best_scores[-1]:
                 best_scores.append(score)
                 best_history.append(spec)
                 best_valids.append(val_acc)
                 best_tests.append(test_acc)
             else:
+                # 把最大的值复制了一份
                 best_scores.append(best_scores[-1])
                 best_history.append(best_history[-1])
                 best_valids.append(best_valids[-1])
                 best_tests.append(best_tests[-1])
+        else:
+            rate = flops / constraint
+            print("flops / constraint = %f" % rate)
 
     population.pop(0)
-    # print('len',len(population))
-    # print('Iteration:', i)
+    print('len',len(population))
+    print('Iteration:', i)
 
     # After the population is seeded, proceed with evolving the population.
     i = 0
     while i < cycle:
+        # 从 population 中随机选取 tournament_size 个个体
+        # C(len(population), tournament_size)
         sample = random_combination(population, tournament_size)
         # print(sample)
+        # 从 sample 中选取适应度最高的个体
         best_spec = sorted(sample, key=lambda i: i[0])[-1][1]
         # print(sorted(sample, key=lambda i:i[0]))
         # print(best_spec.original_matrix)
-        new_spec = mutate_spec(best_spec, mutation_rate)
+        # 对 best_spec 进行变异
+        new_spec = mutate_spec(victim_spec, best_spec, mutation_rate)
         print('The %d-th new spec generated'% i)
 
         # data = nasbench.query(new_spec)
@@ -82,7 +94,7 @@ def run_evolution_search(victim_spec, cycle=30,
                 best_history.append(best_history[-1])
                 best_valids.append(best_valids[-1])
                 best_tests.append(best_tests[-1])
-                seed.append(victim_spec)
+                seed.append(victim_spec) # 原始spec
 
     return best_history, best_valids, best_tests, seed
 
@@ -102,12 +114,13 @@ if __name__=='__main__':
 
     victim_net = Network(victim_spec)
     input = torch.randn(1, 3, 32, 32)
-    victim_flops, _ = profile(victim_net, inputs=(input, )) # 用于计算vectim_net的flops
+    victim_flops, _ = profile(victim_net, inputs=(input, ), verbose=False) # 用于计算vectim_net的flops
+    print('victim_flops: %f' % victim_flops)
 
 
     evolution_data = []
     # search with different flops constraints
-    constraint_list = [1e8,5e7,4e7]
+    constraint_list = [1e9,8e8,5e8]
     i = 0
     for i in range(len(constraint_list)):
       best_history, best_valids, best_tests, seed = run_evolution_search(victim_spec, cycle=50,
@@ -121,5 +134,6 @@ if __name__=='__main__':
 
 
     # save results
-    # with open('data/data.pkl', 'wb') as f:
-    #    pickle.dump(evolution_data, f)
+    time_str = time.strftime("%Y%m%d-%H%M%S")
+    with open('data/'+ time_str + 'data.pkl', 'wb') as f:
+       pickle.dump(evolution_data, f)
